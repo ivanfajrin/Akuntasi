@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manajemen Keuangan</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <div class="container py-5">
+    <h1 class="text-center mb-4">Manajemen Keuangan</h1>
+
+    <!-- Form Input -->
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white">Tambah Transaksi</div>
+      <div class="card-body">
+        <form id="transactionForm">
+          <div class="mb-3">
+            <label for="type" class="form-label">Jenis Transaksi</label>
+            <select id="type" class="form-select" required>
+              <option value="">Pilih Jenis</option>
+              <option value="Harta">Harta</option>
+              <option value="Beban">Beban</option>
+              <option value="Modal">Modal</option>
+              <option value="Utang">Utang</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="description" class="form-label">Deskripsi</label>
+            <input type="text" id="description" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label for="amount" class="form-label">Jumlah</label>
+            <input type="number" id="amount" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-success">Simpan</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="card mb-4">
+      <div class="card-header bg-secondary text-white">Daftar Transaksi</div>
+      <div class="card-body">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Jenis</th>
+              <th>Deskripsi</th>
+              <th>Jumlah</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="transactionTable">
+            <tr>
+              <td colspan="5" class="text-center">Belum ada data</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="card">
+      <div class="card-header bg-info text-white">Ringkasan Keuangan</div>
+      <div class="card-body">
+        <ul class="list-group">
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            Total Harta <span id="totalHarta">Rp 0</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            Total Beban <span id="totalBeban">Rp 0</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            Total Modal <span id="totalModal">Rp 0</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            Total Utang <span id="totalUtang">Rp 0</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const app = {
+      transactions: JSON.parse(localStorage.getItem('financeData')) || [],
+
+      saveData: function() {
+        localStorage.setItem('financeData', JSON.stringify(this.transactions));
+      },
+
+      addTransaction: function(type, description, amount) {
+        this.transactions.push({ type, description, amount: parseFloat(amount) });
+        this.saveData();
+      },
+
+      deleteTransaction: function(index) {
+        this.transactions.splice(index, 1);
+        this.saveData();
+      },
+
+      calculateSummary: function() {
+        const summary = { Harta: 0, Beban: 0, Modal: 0, Utang: 0 };
+        this.transactions.forEach(({ type, amount }) => {
+          summary[type] += amount;
+        });
+        return summary;
+      },
+
+      renderTransactions: function() {
+        const table = document.getElementById('transactionTable');
+        if (this.transactions.length === 0) {
+          table.innerHTML = '<tr><td colspan="5" class="text-center">Belum ada data</td></tr>';
+        } else {
+          table.innerHTML = this.transactions.map((t, i) => `
+            <tr>
+              <td>${i + 1}</td>
+              <td>${t.type}</td>
+              <td>${t.description}</td>
+              <td>Rp ${t.amount.toLocaleString()}</td>
+              <td>
+                <button class="btn btn-danger btn-sm" onclick="app.deleteHandler(${i})">Hapus</button>
+              </td>
+            </tr>
+          `).join('');
+        }
+      },
+
+      renderSummary: function() {
+        const summary = this.calculateSummary();
+        document.getElementById('totalHarta').textContent = `Rp ${summary.Harta.toLocaleString()}`;
+        document.getElementById('totalBeban').textContent = `Rp ${summary.Beban.toLocaleString()}`;
+        document.getElementById('totalModal').textContent = `Rp ${summary.Modal.toLocaleString()}`;
+        document.getElementById('totalUtang').textContent = `Rp ${summary.Utang.toLocaleString()}`;
+      },
+
+      deleteHandler: function(index) {
+        if (confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) {
+          this.deleteTransaction(index);
+          this.renderTransactions();
+          this.renderSummary();
+        }
+      },
+
+      submitHandler: function(e) {
+        e.preventDefault();
+        const type = document.getElementById('type').value;
+        const description = document.getElementById('description').value;
+        const amount = document.getElementById('amount').value;
+
+        this.addTransaction(type, description, amount);
+        this.renderTransactions();
+        this.renderSummary();
+        document.getElementById('transactionForm').reset();
+      },
+
+      init: function() {
+        document.getElementById('transactionForm').onsubmit = this.submitHandler.bind(this);
+        this.renderTransactions();
+        this.renderSummary();
+      }
+    };
+
+    app.init();
+  </script>
+</body>
+</html>
